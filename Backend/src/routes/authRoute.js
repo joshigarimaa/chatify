@@ -1,9 +1,12 @@
-const e = require("express");
 const express = require("express");
 const router = express.Router();
 
-router.post("/signup", (req, res) => {});
-router.post("/login", (req, res) => {});
+router.get("/signup", (req, res) => {
+  res.send("User signed up successfully");
+});
 
+router.get("/login", (req, res) => {
+  res.send("User logged in successfully");
+});
 
-export default router;
+module.exports = router;
