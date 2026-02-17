@@ -1,6 +1,8 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken");
+const sendWelcomeEmail = require("../emails/emailHandlers");
+const ENV = require("../lib/env");
 
 const signUp = async (req, res) => {
   try {
@@ -41,6 +43,18 @@ const signUp = async (req, res) => {
     // Generate JWT cookie
     generateToken(newUser._id, res);
 
+    // Send welcome email (non-blocking safe)
+    try {
+      await sendWelcomeEmail(
+        newUser.email,
+        newUser.fullName,
+        ENV.CLIENT_URL,
+      );
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+    }
+
+    // Send response AFTER everything
     res.status(201).json({
       message: "User created successfully",
       user: {

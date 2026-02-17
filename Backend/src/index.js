@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config();
-
+const ENV = require("./lib/env");
 const authRoute = require("./routes/authRoute");
 const messageRoute = require("./routes/messageRoute");
 const connectDB = require("./lib/db");
@@ -19,7 +18,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/message", messageRoute);
 
 // Production Setup
-if (process.env.NODE_ENV === "production") {
+if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../../Frontend/dist")));
 
   app.use((req, res) => {
@@ -28,7 +27,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Port
-const PORT = process.env.PORT || 3000;
+const PORT = ENV.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
