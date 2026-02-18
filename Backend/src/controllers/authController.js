@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken");
 const sendWelcomeEmail = require("../emails/emailHandlers");
 const ENV = require("../lib/env");
+const cloudinary = require("../lib/cloudinary");
 
 const signUp = async (req, res) => {
   try {
@@ -45,11 +46,7 @@ const signUp = async (req, res) => {
 
     // Send welcome email (non-blocking safe)
     try {
-      await sendWelcomeEmail(
-        newUser.email,
-        newUser.fullName,
-        ENV.CLIENT_URL,
-      );
+      await sendWelcomeEmail(newUser.email, newUser.fullName, ENV.CLIENT_URL);
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
     }
@@ -121,4 +118,47 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { signUp, login, logout };
+const updateProfile = async (req, res) => {
+  try {
+    const { profilePic } = req.body;
+
+    if (!profilePic) {
+      return res.status(400).json({
+        error: "Profile picture is required",
+      });
+    }
+
+    const userId = req.user._id;
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(profilePic, {
+      folder: "chatapp/profilePics",
+      public_id: `${userId}_profilePic`,
+      overwrite: true,
+    });
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: result.secure_url },
+      { new: true },
+    );
+
+    res.status(200).json({
+      message: "Profile picture updated successfully",
+      user: {
+        _id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        profilePic: updatedUser.profilePic,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile picture:", error);
+    res.status(500).json({
+      error: "Failed to update profile picture",
+    });
+  }
+};
+
+module.exports = { signUp, login, logout, updateProfile };
