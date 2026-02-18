@@ -6,15 +6,17 @@ const {
   updateProfile,
 } = require("../controllers/authController");
 const { protectRoute } = require("../middleware/authMiddleware");
+const arcjetProtection = require("../middleware/arcjetMiddleware");
 
 const router = express.Router();
+router.use(arcjetProtection);
 
-router.post("/signup", signUp);
-router.post("/login", login);
-router.post("/logout", logout);
-router.put("/update-profile", protectRoute, updateProfile);
+router.post("/signup", arcjetProtection, signUp);
+router.post("/login", arcjetProtection, login);
+router.post("/logout", arcjetProtection, logout);
+router.put("/update-profile", arcjetProtection, protectRoute, updateProfile);
 
-router.get("/check", protectRoute, (req, res) => {
+router.get("/check", arcjetProtection, protectRoute, (req, res) => {
   res.status(200).json({
     user: req.user,
   });
