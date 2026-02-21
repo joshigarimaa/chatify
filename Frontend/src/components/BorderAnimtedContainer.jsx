@@ -26,4 +26,9 @@ const BorderAnimatedContainer = ({ children }) => {
 
 export default BorderAnimatedContainer;
 
+
+
+
+
+
 //https://cruip-tutorials.vercel.app/animated-gradient-border/
