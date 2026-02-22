@@ -13,7 +13,9 @@ export const useChatStore = create((set, get) => ({
   isChatsLoading: false,
   isMessagesLoading: false,
 
-  isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled") ?? "true"),
+  isSoundEnabled: JSON.parse(
+    localStorage.getItem("isSoundEnabled") ?? "true"
+  ),
 
   toggleSound: () => {
     const newValue = !get().isSoundEnabled;
@@ -24,26 +26,36 @@ export const useChatStore = create((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 
+  // ✅ GET CONTACTS
   getAllContact: async () => {
     set({ isContactsLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/contacts");
-      set({ allContacts: res.data });
+      const res = await axiosInstance.get("/message/contacts");
+
+      // ✅ assuming backend returns { contacts: [...] }
+      set({ allContacts: res.data.contacts || res.data });
+
     } catch (error) {
-      const message = error?.response?.data?.message || "Something went wrong";
+      const message =
+        error?.response?.data?.message || "Something went wrong";
       toast.error(message);
     } finally {
       set({ isContactsLoading: false });
     }
   },
 
+  // ✅ GET CHATS
   getMyChatPartners: async () => {
     set({ isChatsLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/chats");
-      set({ chats: res.data });
+      const res = await axiosInstance.get("/message/chats");
+
+      // ✅ assuming backend returns { chats: [...] }
+      set({ chats: res.data.chats || res.data });
+
     } catch (error) {
-      const message = error?.response?.data?.message || "Something went wrong";
+      const message =
+        error?.response?.data?.message || "Something went wrong";
       toast.error(message);
     } finally {
       set({ isChatsLoading: false });
