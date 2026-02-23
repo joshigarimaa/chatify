@@ -53,14 +53,14 @@ import UserLoadingSkeleton from "./UserLoadingSkeleton";
 
 const ContactList = () => {
   const {
-    getAllContact,
+    getAllContacts,
     allContacts,
     setSelectedUser,
     isContactsLoading,
   } = useChatStore();
 
   useEffect(() => {
-    getAllContact();
+    getAllContacts();
   }, []);
 
   if (isContactsLoading) return <UserLoadingSkeleton />;
