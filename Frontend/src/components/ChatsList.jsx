@@ -2,22 +2,25 @@ import React, { useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import UserLoadingSkeleton from "./UserLoadingSkeleton";
 import NoChatsFound from "./NoChatsFound";
+import { useAuthStore } from "../store/useAuthStore";
 
 const ChatsList = () => {
   const {
     getMyChatPartners,
     chats,
-    isChatsLoading, // ✅ fixed
+    isChatsLoading,
     setSelectedUser,
   } = useChatStore();
 
+  const { onlineUsers } = useAuthStore();
+
   useEffect(() => {
     getMyChatPartners();
-  }, []);
+  }, [getMyChatPartners]); // ✅ added dependency
 
   if (isChatsLoading) return <UserLoadingSkeleton />;
 
-  if (chats.length === 0) return <NoChatsFound />;
+  if (!chats || chats.length === 0) return <NoChatsFound />; // ✅ safe check
 
   return (
     <>
@@ -28,7 +31,13 @@ const ChatsList = () => {
           onClick={() => setSelectedUser(chat)}
         >
           <div className="flex items-center gap-3">
-            <div className="avatar online">
+            <div
+              className={`avatar ${
+                onlineUsers.includes(chat._id?.toString()) // ✅ safer comparison
+                  ? "online"
+                  : "offline"
+              }`}
+            >
               <div className="size-12 rounded-full">
                 <img
                   src={chat.profilePic || "/avatar.png"}
