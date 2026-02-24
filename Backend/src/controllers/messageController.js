@@ -1,9 +1,12 @@
 const messageModel = require("../models/Message");
 const userModel = require("../models/userModel");
-const cloudinary = require("../lib/cloudinary"); // make sure this exists
+const cloudinary = require("../lib/cloudinary");
+const { io, getRecieverSocketId } = require("../lib/socket");
 
-// 🔹 Get all contacts except logged-in user
-const getAllContacts = async function (req, res) {
+// ===============================
+// 🔹 GET ALL CONTACTS
+// ===============================
+const getAllContacts = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -22,8 +25,10 @@ const getAllContacts = async function (req, res) {
   }
 };
 
-// 🔹 Get messages between logged-in user and another user
-const getMessagesByUserId = async function (req, res) {
+// ===============================
+// 🔹 GET MESSAGES BETWEEN USERS
+// ===============================
+const getMessagesByUserId = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -52,8 +57,10 @@ const getMessagesByUserId = async function (req, res) {
   }
 };
 
-// 🔹 Send Message
-const sendMessage = async function (req, res) {
+// ===============================
+// 🔹 SEND MESSAGE
+// ===============================
+const sendMessage = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -69,6 +76,7 @@ const sendMessage = async function (req, res) {
 
     let imageUrl = null;
 
+    // Upload image only if provided
     if (image) {
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
@@ -81,6 +89,15 @@ const sendMessage = async function (req, res) {
       image: imageUrl,
     });
 
+    // 🔥 Real-time emit
+    const receiverSocketIds = getRecieverSocketId(receiverId);
+
+    if (receiverSocketIds) {
+      receiverSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("receiveMessage", newMessage);
+      });
+    }
+
     return res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage:", error.message);
@@ -88,7 +105,10 @@ const sendMessage = async function (req, res) {
   }
 };
 
-const getChatPartners = async function (req, res) {
+// ===============================
+// 🔹 GET CHAT PARTNERS
+// ===============================
+const getChatPartners = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
