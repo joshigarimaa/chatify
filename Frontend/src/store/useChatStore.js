@@ -3,6 +3,8 @@ import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
 
+const notificationSound = new Audio("/sounds/notification.mp3");
+
 export const useChatStore = create((set, get) => ({
   allContacts: [],
   chats: [],
@@ -25,35 +27,39 @@ export const useChatStore = create((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 
+  // =============================
   // GET CONTACTS
+  // =============================
   getAllContacts: async () => {
     set({ isContactsLoading: true });
     try {
       const res = await axiosInstance.get("/message/contacts");
       set({ allContacts: res.data.contacts || res.data });
     } catch (error) {
-      const message = error?.response?.data?.message || "Something went wrong";
-      toast.error(message);
+      toast.error(error?.response?.data?.message || "Something went wrong");
     } finally {
       set({ isContactsLoading: false });
     }
   },
 
+  // =============================
   // GET CHATS
+  // =============================
   getMyChatPartners: async () => {
     set({ isChatsLoading: true });
     try {
       const res = await axiosInstance.get("/message/chats");
       set({ chats: res.data.chats || res.data });
     } catch (error) {
-      const message = error?.response?.data?.message || "Something went wrong";
-      toast.error(message);
+      toast.error(error?.response?.data?.message || "Something went wrong");
     } finally {
       set({ isChatsLoading: false });
     }
   },
 
+  // =============================
   // GET MESSAGES
+  // =============================
   getMessagesByUserId: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -66,8 +72,11 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // =============================
+  // SEND MESSAGE (Optimistic UI)
+  // =============================
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser } = get();
     if (!selectedUser) return;
 
     const { authUser } = useAuthStore.getState();
@@ -84,7 +93,9 @@ export const useChatStore = create((set, get) => ({
       isOptimistic: true,
     };
 
-    set({ messages: [...messages, optimisticMessage] });
+    set((state) => ({
+      messages: [...state.messages, optimisticMessage],
+    }));
 
     try {
       const res = await axiosInstance.post(
@@ -98,9 +109,51 @@ export const useChatStore = create((set, get) => ({
         ),
       }));
     } catch (error) {
-      
-      set({ messages: messages });
+      set((state) => ({
+        messages: state.messages.filter((msg) => msg._id !== tempId),
+      }));
+
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
+  },
+
+  // =============================
+  // SUBSCRIBE TO REAL-TIME MESSAGES
+  // =============================
+  subscribeToMessages: () => {
+    const { selectedUser, isSoundEnabled } = get();
+    const { socket, authUser } = useAuthStore.getState();
+
+    if (!selectedUser || !socket) return;
+
+    socket.off("receiveMessage"); // prevent duplicate listeners
+
+    socket.on("receiveMessage", (newMessage) => {
+      // Only add message if it belongs to current chat
+      if (
+        newMessage.senderId === selectedUser._id ||
+        newMessage.receiverId === selectedUser._id
+      ) {
+        set((state) => ({
+          messages: [...state.messages, newMessage],
+        }));
+      }
+
+      // Play sound only if message is NOT sent by current user
+      if (isSoundEnabled && newMessage.senderId !== authUser._id) {
+        notificationSound.currentTime = 0;
+        notificationSound.play().catch(() => {});
+      }
+    });
+  },
+
+  // =============================
+  // UNSUBSCRIBE
+  // =============================
+  unsubscribeFromMessages: () => {
+    const { socket } = useAuthStore.getState();
+    if (!socket) return;
+
+    socket.off("receiveMessage");
   },
 }));

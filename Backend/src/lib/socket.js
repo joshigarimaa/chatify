@@ -16,7 +16,13 @@ const io = new Server(server, {
 
 io.use(socketAuthMiddleware);
 
+// ✅ Define map BEFORE using it
 const userSocketMap = new Map();
+
+// ✅ Correct function (CommonJS style)
+function getRecieverSocketId(userId) {
+  return userSocketMap.get(userId); // fixed Map usage
+}
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.user.fullName);
@@ -48,5 +54,10 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ EXPORT THESE
-module.exports = { app, server, io };s
+// ✅ Proper CommonJS export
+module.exports = {
+  app,
+  server,
+  io,
+  getRecieverSocketId,
+};
